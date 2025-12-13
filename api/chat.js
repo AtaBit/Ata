@@ -1,20 +1,26 @@
-// /api/chat.js
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+// /api/chat.js  (Edge Runtime)
+export const config = { runtime: 'edge' };
 
+export default async function handler(req) {
   try {
-    // Body lesen
-    const { messages } = req.body || {};
-
-    // Validieren
-    if (!Array.isArray(messages)) {
-      return res.status(400).json({ error: 'Invalid payload: "messages" must be an array.' });
+    if (req.method !== 'POST') {
+      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+        status: 405,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
-    // System-Prompt (SEYA-Identität)
+    // Body als JSON parsen (wichtig auf Vercel Edge!)
+    const body = await req.json().catch(() => ({}));
+    const { messages } = body || {};
+
+    if (!Array.isArray(messages)) {
+      return new Response(JSON.stringify({ error: 'Invalid payload: "messages" must be an array.' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     const systemPrompt =
       `Du heißt SEYA und bist die freundliche Assistentin des Salons "Masterclass Hair & Beauty". ` +
       `Antworte kurz, hilfreich und auf Deutsch. Biete aktiv passende Leistungen an ` +
@@ -25,52 +31,59 @@ export default async function handler(req, res) {
       `• Permanent Make-up: https://masterclass-hairbeauty.com/permanent-makeup/\n` +
       `• Braut-Styling: https://masterclass-hairbeauty.com/braut-styling-ostermiething/\n` +
       `• Herren: https://masterclass-hairbeauty.com/herren/\n` +
-      `Frag am Ende freundlich nach einem Terminfenster.`
+      `Frag am Ende freundlich nach einem Terminfenster.`;
 
-    // Frontend-Nachrichten defensiv mappen
     const mapped = [
       { role: 'system', content: systemPrompt },
-      ...messages.map((m) => ({
+      ...messages.map(m => ({
         role: m?.role === 'assistant' ? 'assistant' : 'user',
-        content: String(m?.content ?? '').slice(0, 4000) // Safety
+        content: String(m?.content ?? '').slice(0, 4000)
       }))
     ];
 
-    // OpenAI-Key
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'Missing OPENAI_API_KEY' });
+      return new Response(JSON.stringify({ error: 'Missing OPENAI_API_KEY' }), {
+        status: 500, headers: { 'Content-Type': 'application/json' }
+      });
     }
 
-    // OpenAI-Request (günstig & gut)
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',         // günstig und ausreichend
+        model: 'gpt-4o-mini',
         temperature: 0.4,
         messages: mapped
       })
     });
 
-    const data = await response.json();
+    const data = await resp.json();
 
-    if (!response.ok) {
-      // OpenAI-Fehler 1:1 zurückgeben, damit du siehst, was los ist
-      return res.status(response.status).json({ error: data?.error?.message || 'OpenAI error' });
+    if (!resp.ok) {
+      return new Response(JSON.stringify({ error: data?.error?.message || 'OpenAI error' }), {
+        status: resp.status,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     const reply = data?.choices?.[0]?.message?.content?.trim();
     if (!reply) {
-      return res.status(500).json({ error: 'No reply from model' });
+      return new Response(JSON.stringify({ error: 'No reply from model' }), {
+        status: 500, headers: { 'Content-Type': 'application/json' }
+      });
     }
 
-    return res.status(200).json({ reply });
+    return new Response(JSON.stringify({ reply }), {
+      status: 200, headers: { 'Content-Type': 'application/json' }
+    });
   } catch (err) {
-    return res.status(500).json({ error: err?.message || String(err) });
+    return new Response(JSON.stringify({ error: err?.message || String(err) }), {
+      status: 500, headers: { 'Content-Type': 'application/json' }
+    });
   }
 }
 
