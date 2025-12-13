@@ -4,7 +4,7 @@ const inputEl = document.getElementById("chat-input");
 const sendBtn = document.getElementById("send-btn");
 
 let history = [
-  { role: "assistant", content: "Hi, ich bin **Luna** 🌙 – deine Assistentin. Welche Leistung wünschst du dir und wann passt es dir?" }
+  { role: "assistant", content: "Hi, herzlich wilkommen bei Masterclass ich bin **SEYA** 🌙 – deine Persöhnliche Assistentin. Welche Leistung wünschst du dir und wann passt es dir?" }
 ];
 
 function render() {
@@ -52,5 +52,5 @@ formEl.addEventListener("submit", (e) => {
   e.preventDefault();
   const text = inputEl.value.trim();
   if (!text) return;
-  talkToLuna(text);
+  talkToSEYA(text);
 });
