@@ -1,13 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
-<title>Test KI</title>
-<link rel='stylesheet' href='style.css'>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Luna – Friseur Assistentin</title>
+  <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-<h1>Masterclass Hair & Beauty – Test KI</h1>
-<p>Wenn du das siehst, ist die Seite online.</p>
-<p>Lade KI…</p>
-<script src='app.js'></script>
+  <main class="container">
+    <header>
+      <h1>💇‍♀️ Assistentin <span class="luna">Luna</span></h1>
+      <p class="sub">Fragen zu Preisen, Leistungen & Terminen – Luna hilft dir sofort.</p>
+    </header>
+
+    <section id="chat" class="chat"></section>
+
+    <form id="chat-form" class="composer">
+      <input id="chat-input" type="text" placeholder="Schreib Luna…" autocomplete="off" />
+      <button id="send-btn" type="submit">Senden</button>
+    </form>
+  </main>
+
+  <script src="./app.js" defer></script>
 </body>
 </html>
