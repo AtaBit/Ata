@@ -1,5 +1,3 @@
-// app.js
-
 const chatEl  = document.getElementById("chat");
 const formEl  = document.getElementById("chat-form");
 const inputEl = document.getElementById("chat-input");
@@ -26,7 +24,6 @@ function render() {
 render();
 
 async function talkToSEYA(text) {
-  // Nutzer-Nachricht anzeigen
   history.push({ role: "user", content: text });
   render();
 
@@ -34,29 +31,36 @@ async function talkToSEYA(text) {
   sendBtn.disabled = true;
 
   try {
-    // Falls dein Backend { message } erwartet:
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text })
-      // ❗ Wenn dein Backend stattdessen die ganze History erwartet,
-      // nimm: body: JSON.stringify({ messages: history })
+      body: JSON.stringify({
+        messages: history   // <-- WICHTIG! Ein ARRAY
+      })
     });
 
-    if (!res.ok) {
-      const err = await res.text().catch(() => "");
-      throw new Error(err || `HTTP ${res.status}`);
-    }
-
     const data = await res.json();
-    const reply = data.reply || data.message || "…";
-    history.push({ role: "assistant", content: reply });
-  } catch (e) {
-    history.push({ role: "assistant", content: "Fehler: " + e.message });
-  } finally {
-    sendBtn.disabled = false;
-    render();
+
+    if (data.reply) {
+      history.push({
+        role: "assistant",
+        content: data.reply
+      });
+    } else {
+      history.push({
+        role: "assistant",
+        content: "Fehler: Keine Antwort erhalten."
+      });
+    }
+  } catch (err) {
+    history.push({
+      role: "assistant",
+      content: "Fehler: " + err.message
+    });
   }
+
+  sendBtn.disabled = false;
+  render();
 }
 
 formEl.addEventListener("submit", (e) => {
