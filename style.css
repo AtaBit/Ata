@@ -1,213 +1,126 @@
 :root{
   --bg:#0c0f1a;
   --card:#12172a;
-  --muted:#8791b0;
+  --muted:#95a0c6;
   --text:#e9edff;
   --accent:#6a5cff;
-  --accent-2:#8d7bff;
+  --accent2:#8d7bff;
   --bubble-user:#2a3152;
   --bubble-bot:#181f38;
-  --chip:#2b235a;
-  --ok:#6ce1a6;
 }
 
 *{box-sizing:border-box}
-html,body{height:100%}
-body{
-  margin:0;
-  background:radial-gradient(1200px 800px at 20% -10%, #1a2141 0%, #0c0f1a 60%);
-  color:var(--text);
-  font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial;
-}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:system-ui}
 
 .wrap{
   max-width:960px;
-  margin-inline:auto;
+  margin:auto;
   padding:16px;
-  min-height:100%;
   display:flex;
   flex-direction:column;
-  gap:12px;
+  height:100%;
 }
 
 .topbar{
   display:flex;
-  align-items:center;
   justify-content:space-between;
-  gap:12px;
+  align-items:center;
+  margin-bottom:10px;
 }
 
 .brand{
   display:flex;
   align-items:center;
-  gap:12px;
-}
-
-.brand .avatar{
-  width:44px;
-  height:44px;
-  border-radius:50%;
-  border:2px solid var(--accent-2);
-  box-shadow:0 0 0 4px rgba(106,92,255,.15);
-  object-fit:cover;
-}
-
-.title h1{
-  margin:0;
-  font-size:18px;
-  font-weight:700;
-}
-.title h1 span{color:var(--accent)}
-.title p{
-  margin:2px 0 0 0;
-  color:var(--muted);
-  font-size:13px;
-}
-
-.reset{
-  background:transparent;
-  color:var(--muted);
-  border:1px solid #263055;
-  padding:8px 12px;
-  border-radius:10px;
-  cursor:pointer;
-}
-.reset:hover{border-color:#3a4780;color:#cbd3ff}
-
-.chat{
-  background:rgba(18,23,42,.45);
-  border:1px solid #1c2344;
-  border-radius:16px;
-  padding:14px;
-  flex:1;
-  overflow:auto;
-  display:flex;
-  flex-direction:column;
-  gap:14px;
-  scroll-behavior:smooth;
-}
-
-.msg{
-  display:flex;
-  align-items:flex-start;
   gap:10px;
 }
 
-.msg .icon{
-  width:26px;
-  height:26px;
+.avatar{
+  width:46px;
+  height:46px;
   border-radius:50%;
-  flex:0 0 26px;
+  border:2px solid var(--accent2);
+  object-fit:cover;
+}
+
+.title h1{margin:0;font-size:18px;font-weight:700}
+.title h1 span{color:var(--accent)}
+.title p{margin:2px 0 0;color:var(--muted);font-size:13px}
+
+.reset{
+  background:transparent;color:var(--muted);
+  border:1px solid #2c3359;
+  padding:6px 12px;border-radius:10px;cursor:pointer;
+}
+.reset:hover{color:#fff;border-color:#4a55a5}
+
+.chat{
+  flex:1;
+  background:#11162d;
+  border:1px solid #1b2345;
+  border-radius:14px;
+  padding:14px;
+  overflow:auto;
   display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:14px;
-  background:#231c58;
-  border:1px solid #3a2f8a;
-  color:#cfc7ff;
+  flex-direction:column;
+  gap:12px;
+}
+
+.msg{display:flex;gap:10px}
+.msg.bot .icon{
+  width:26px;height:26px;border-radius:50%;
+  background:#292f60;border:1px solid #414a9a;
+  display:flex;align-items:center;justify-content:center;font-size:13px;color:#d8d9ff;
 }
 
 .msg.user{justify-content:flex-end}
 .msg.user .icon{display:none}
 
 .bubble{
-  padding:12px 14px;
-  border-radius:14px;
-  box-shadow:0 6px 18px rgba(0,0,0,.25);
-  word-break:break-word;
-}
-
-.msg.user .bubble{
-  background:var(--bubble-user);
-  max-width:58%;
-}
-.msg.bot .bubble{
   background:var(--bubble-bot);
-  max-width:65%;
-  font-size:15px;
+  border-radius:14px;padding:10px 14px;
+  max-width:65%;word-break:break-word;
 }
+.msg.user .bubble{background:var(--bubble-user);max-width:60%}
 
-.typing{
-  display:inline-flex;
-  gap:6px;
-  align-items:center;
-}
+.typing{display:flex;gap:6px}
 .dot{
-  width:6px;height:6px;border-radius:50%;
-  background:#8e95c9;opacity:.5;
-  animation:bl 1.2s infinite ease-in-out;
+  width:6px;height:6px;background:#9aa4d7;border-radius:50%;
+  animation:blink 1.2s infinite;
 }
 .dot:nth-child(2){animation-delay:.2s}
 .dot:nth-child(3){animation-delay:.4s}
-@keyframes bl{
-  0%,80%,100%{transform:translateY(0)}
-  40%{transform:translateY(-3px)}
-}
-
-/* CTA Bar (wird nur bei Standort+Service gezeigt) */
-.cta-bar{
-  background:#101736;
-  border:1px solid #1d2550;
-  border-radius:14px;
-  padding:12px;
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px 14px;
-  align-items:center;
-  justify-content:space-between;
-}
-.cta-hint{
-  color:#c8d1ff;
-  font-size:14px;
-}
-.cta-actions{
-  display:flex;gap:10px;flex-wrap:wrap;
-}
-.cta-btn{
-  padding:10px 14px;
-  border-radius:10px;
-  text-decoration:none;
-  font-weight:600;
-  color:#d7dbff;
-  background:#262f66;
-  border:1px solid #37438e;
-}
-.cta-btn.primary{
-  background:linear-gradient(135deg,var(--accent),var(--accent-2));
-  border:none;color:white;
-  box-shadow:0 6px 18px rgba(106,92,255,.35);
-}
-.cta-btn:hover{filter:brightness(1.05)}
-.cta-btn:active{transform:translateY(1px)}
+@keyframes blink{0%,80%,100%{opacity:.3}40%{opacity:1}}
 
 .composer{
-  display:flex;gap:10px;
-  background:#0f1530;
-  padding:10px;
-  border:1px solid #1a2147;
-  border-radius:14px;
+  display:flex;gap:10px;margin-top:10px;
 }
 .composer input{
-  flex:1;
-  background:#0b1127;
-  border:1px solid #1f2852;
-  border-radius:10px;
-  color:var(--text);
-  padding:12px 14px;
+  flex:1;background:#0f1329;border:1px solid #1f2852;
+  border-radius:10px;padding:12px;color:white;
 }
 .composer button{
-  background:linear-gradient(135deg,var(--accent),var(--accent-2));
-  border:none;color:white;
-  padding:12px 16px;
+  background:var(--accent);border:none;border-radius:10px;
+  padding:12px 16px;color:white;font-weight:700;cursor:pointer;
+}
+
+/* CTA Bar */
+.cta-bar{
+  background:#101736;border:1px solid #1d2550;
+  border-radius:14px;padding:12px;
+  margin-top:10px;
+}
+.cta-hint{font-size:14px;margin-bottom:10px;color:#cbd2ff}
+.cta-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+.cta-btn{
+  text-decoration:none;
+  padding:10px 14px;
   border-radius:10px;
-  font-weight:700;
-  cursor:pointer;
+  background:#262f66;
+  color:#fff;
 }
-.composer button:disabled{opacity:.6;cursor:not-allowed}
-
-@media (max-width:680px){
-  .msg.user .bubble{max-width:78%}
-  .msg.bot .bubble{max-width:82%}
+.cta-btn.primary{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:white;
 }
-
 
