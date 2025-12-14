@@ -1,7 +1,7 @@
 // --------------------- Chat-Speicher ---------------------
 function loadHistory() {
   try {
-    const raw = localStorage.getItem("seya_history");
+    const raw = sessionStorage.getItem("seya_history");
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
