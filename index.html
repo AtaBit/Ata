@@ -1,25 +1,25 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Assistentin SEYA – Masterclass Hair & Beauty</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-  <main class="container">
+  <main class="wrap">
     <header class="topbar">
       <div class="brand">
-        <div class="avatar-circle">S</div>
-        <div>
-          <h1>Assistentin <span class="seya">SEYA</span></h1>
-          <div class="sub">Fragen zu Preisen, Leistungen & Terminen – SEYA hilft dir sofort.</div>
+        <img src="./seya-avatar.png" alt="SEYA" class="avatar" />
+        <div class="title">
+          <h1>Assistentin <span>SEYA</span></h1>
+          <p>Fragen zu Leistungen, Preisen & Terminen – ich helfe sofort.</p>
         </div>
       </div>
-      <button id="reset-btn" class="reset">Neu starten</button>
+      <button id="reset-btn" class="reset" title="Neuen Chat starten">Neu</button>
     </header>
 
-    <section id="chat" class="chat" aria-live="polite"></section>
+    <section id="chat" class="chat" role="log" aria-live="polite"></section>
 
     <form id="chat-form" class="composer" autocomplete="off">
       <input id="chat-input" type="text" placeholder="Schreib SEYA…" />
@@ -30,3 +30,4 @@
   <script src="./app.js" defer></script>
 </body>
 </html>
+
