@@ -23,6 +23,7 @@ function render() {
 }
 render();
 
+
 async function talkToSEYA(text) {
   history.push({ role: "user", content: text });
   render();
@@ -30,43 +31,40 @@ async function talkToSEYA(text) {
   inputEl.value = "";
   sendBtn.disabled = true;
 
+  // 🟢 Typing-Indikator anzeigen
+  const typingDiv = document.createElement("div");
+  typingDiv.id = "typing";
+  typingDiv.className = "typing";
+  typingDiv.innerHTML = `
+    SEYA schreibt
+    <span></span><span></span><span></span>
+  `;
+  chatEl.appendChild(typingDiv);
+  chatEl.scrollTop = chatEl.scrollHeight;
+
   try {
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: history   // <-- WICHTIG! Ein ARRAY
-      })
+      body: JSON.stringify({ messages: history })
     });
 
     const data = await res.json();
 
-    if (data.reply) {
-      history.push({
-        role: "assistant",
-        content: data.reply
-      });
+    // Tipp-Indikator entfernen
+    document.getElementById("typing")?.remove();
+
+    if (data?.reply) {
+      history.push({ role: "assistant", content: data.reply });
     } else {
-      history.push({
-        role: "assistant",
-        content: "Fehler: Keine Antwort erhalten."
-      });
+      history.push({ role: "assistant", content: "Fehler: Keine Antwort erhalten." });
     }
-  } catch (err) {
-    history.push({
-      role: "assistant",
-      content: "Fehler: " + err.message
-    });
+  } catch (e) {
+    document.getElementById("typing")?.remove();
+    history.push({ role: "assistant", content: "Fehler: " + e.message });
   }
 
   sendBtn.disabled = false;
   render();
 }
-
-formEl.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const text = inputEl.value.trim();
-  if (!text) return;
-  talkToSEYA(text);
-});
 
