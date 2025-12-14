@@ -12,7 +12,7 @@ const PHONE = {
 };
 
 /* --- Session Storage mit 30-Minuten Timeout --- */
-const STORE_KEY = "seya_history_v4";
+const STORE_KEY = "seya_history_v5";
 const MAX_AGE_MIN = 30;
 
 function loadHistory() {
@@ -49,7 +49,7 @@ let history = loadHistory() || [
 let chatEl, formEl, inputEl, sendBtn, resetBtn;
 
 /* ===========================
-   Chat Rendering
+   Utils / Rendering
    =========================== */
 function createEl(tag, cls, html) {
   const e = document.createElement(tag);
@@ -76,7 +76,7 @@ function render() {
   chatEl.scrollTop = chatEl.scrollHeight;
 }
 
-/* --- Typing Indicator --- */
+/* --- Typing --- */
 function showTyping() {
   const row = createEl("div", "msg bot");
   row.id = "typing";
@@ -111,29 +111,40 @@ function norm(s){
     .trim();
 }
 
-const SERVICE_KEYWORDS = [
-  "haarschnitt","schnitt","kurzhaarschnitt","ponyschnitt",
-  "waschen","foehnen","styling",
-  "farbe","toenung","ansatz","balayage","ombre","straehnen","highlights","dauerwelle",
-  "pflege","intensivpflege","kur","haarkur","maske",
-  "gesichtsbehandlung","kosmetik","microneedling","peeling","aquapeel",
-  "tiefenreinigung","aknebehandlung","express",
-  "permanent make up","microblading","augenbrauen","lippen","eyeliner","wimpernkranz",
-  "braut","brautstyling","brautfrisur","probe","hochstecken",
-  "herren","bart","maschinenschnitt"
-];
-
+/* Robuste Erkennung inkl. zusammengesetzter Wörter */
 function hasServiceKeyword(text){
   const flat = norm(text);
-  const tokens = new Set(flat.split(" "));
 
-  if (flat.includes("permanent make up")) return true;
+  // Häufige Kombi-/Langformen
+  const patterns = [
+    /herren.*schnitt|schnitt.*herren|herrenhaarschnitt|haarschnitt/,
+    /kurzhaar|kurz.*schnitt/,
+    /pony.*schnitt|ponyschnitt/,
+    /waschen.*f(o|oe)hnen|f(o|oe)hnen|waschen/,
+    /styling/,
+    /farbe( |$)|ansatz|toenung|t(ö|oe)nung|balayage|ombr(e|e )|straehnen|straehn|highlights|dauerwelle/,
+    /pflege|intensivpflege|maske|kur\b|haarkur/,
+    /gesichtsbehandlung|kosmetik|microneedling|peeling|aquapeel|tiefenreinigung|akne/,
+    /permanent.*make.*up|microblading|augenbrauen|lippen|eyeliner|wimpernkranz/,
+    /braut|brautstyling|brautfrisur|hochstecken|probe/,
+    /herren|bart|maschinenschnitt/
+  ];
 
-  return SERVICE_KEYWORDS.some(w=>{
-    const n = norm(w);
-    if (n.includes(" ")) return flat.includes(n);
-    return tokens.has(n);
-  });
+  // Zusätzlich simple Substring-Check für eingegebene Begriffe
+  const words = [
+    "haarschnitt","herrenhaarschnitt","herren","bart","maschinenschnitt",
+    "balayage","straehnen","highlights","farbe","ansatz","toenung","tönung",
+    "gesichtsbehandlung","kosmetik","microblading","permanent make up",
+    "augenbrauen","lippen","eyeliner","wimpernkranz","braut","brautstyling"
+  ];
+
+  if (patterns.some(rx => rx.test(flat))) return true;
+
+  for (const w of words){
+    if (flat.includes(norm(w))) return true;
+  }
+
+  return false;
 }
 
 function deriveBookingState(historyArr){
@@ -152,7 +163,7 @@ function deriveBookingState(historyArr){
 }
 
 /* ===========================
-   CTA Bar
+   CTA-Bar (erscheint NUR bei Standort + Service)
    =========================== */
 function showCTA(){
   const state = deriveBookingState(history);
@@ -182,6 +193,7 @@ function showCTA(){
     bar.appendChild(hint);
     bar.appendChild(acts);
     chatEl.appendChild(bar);
+    chatEl.scrollTop = chatEl.scrollHeight;
   }
 }
 
@@ -191,7 +203,7 @@ function showCTA(){
 async function askSEYA(text){
   history.push({ role:"user", content:text });
   saveHistory(history);
-  render();
+  render(); // zeigt CTA sofort, falls Bedingungen erfüllt
 
   inputEl.value="";
   sendBtn.disabled=true;
@@ -218,7 +230,7 @@ async function askSEYA(text){
 
   saveHistory(history);
   sendBtn.disabled=false;
-  render();
+  render(); // CTA nach Bot-Antwort nochmals prüfen
 }
 
 /* ===========================
@@ -246,8 +258,5 @@ window.addEventListener("DOMContentLoaded",()=>{
     render();
   });
 });
-
-
-
 
 
