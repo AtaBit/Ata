@@ -97,17 +97,48 @@ function hideTyping() {
 // Sehr präzise Erkennung (ganze Wörter)
 const SERVICE_KEYWORDS = [
   // Haare
-  "haarschnitt","schnitt","kurzhaarschnitt","ponyschnitt","waschen","föhnen","styling",
-  "farbe","tönung","balayage","strähnen","oberkopf","highlights","dauerwelle",
-  "pflege","intensivpflege","haarkur",
+  "haarschnitt",
+  "schnitt",
+  "kurzhaarschnitt",
+  "ponyschnitt",
+  "waschen",
+  "föhnen",
+  "styling",
+  "farbe",
+  "tönung",
+  "balayage",
+  "strähnen",
+  "oberkopf",
+  "highlights",
+  "dauerwelle",
+  "pflege",
+  "intensivpflege",
+  "haarkur",
   // Kosmetik
-  "gesichtsbehandlung","kosmetik","microneedling","peeling","aquapeel","tiefenreinigung","aknebehandlung",
+  "gesichtsbehandlung",
+  "kosmetik",
+  "microneedling",
+  "peeling",
+  "aquapeel",
+  "tiefenreinigung",
+  "aknebehandlung",
   // PMU
-  "permanent make up","permanent makeup","microblading","augenbrauen","lippen","eyeliner","wimpernkranz",
+  "permanent make up",
+  "permanent makeup",
+  "microblading",
+  "augenbrauen",
+  "lippen",
+  "eyeliner",
+  "wimpernkranz",
   // Braut
-  "braut","brautstyling","probe","hochstecken",
+  "braut",
+  "brautstyling",
+  "probe",
+  "hochstecken",
   // Herren
-  "herren","bart","maschinenschnitt"
+  "herren",
+  "bart",
+  "maschinenschnitt"
 ];
 
 // Enthält Text eines Nutzers mindestens ein echtes Keyword?
