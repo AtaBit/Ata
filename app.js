@@ -1,6 +1,21 @@
-// === SEYA Webchat – stabile Komplettversion ===
+// === SEYA Webchat – Komplettversion mit Termingo-Buttons ===
 
-// ---------- Storage mit Auto-Expire ----------
+// ---- Termingo-Links (fertig eingetragen) ----
+const TERMINGO = {
+  ostermiething: "https://meintermin.termingo.de/preisliste/326",
+  mattighofen:   "https://meintermin.termingo.de/preisliste/335"
+};
+
+// (Optional) Telefon-Buttons
+const PHONE = {
+  ostermiething: "+436609797072",
+  mattighofen:   "+436766627776"
+};
+
+// Merkt den Standort, sobald genannt
+let selectedLocation = null;
+
+// ---------- Storage mit Auto-Expire (pro Tab) ----------
 const STORE_KEY = "seya_history_v2";
 const MAX_AGE_MIN = 30; // nach 30 Minuten Inaktivität neu starten
 
@@ -9,7 +24,6 @@ function loadHistory() {
     const raw = sessionStorage.getItem(STORE_KEY);
     if (!raw) return null;
     const obj = JSON.parse(raw);
-    // älter als MAX_AGE_MIN? -> neu starten
     if (Date.now() - obj.ts > MAX_AGE_MIN * 60 * 1000) {
       sessionStorage.removeItem(STORE_KEY);
       return null;
@@ -19,7 +33,6 @@ function loadHistory() {
     return null;
   }
 }
-
 function saveHistory(messages) {
   try {
     sessionStorage.setItem(
@@ -28,7 +41,6 @@ function saveHistory(messages) {
     );
   } catch {}
 }
-
 function resetHistory() {
   sessionStorage.removeItem(STORE_KEY);
 }
@@ -49,7 +61,7 @@ const formEl  = document.getElementById("chat-form");
 const inputEl = document.getElementById("chat-input");
 const sendBtn = document.getElementById("send-btn");
 
-// ---------- Render ----------
+// ---------- Rendering ----------
 function render() {
   if (!chatEl) return;
   chatEl.innerHTML = "";
@@ -60,6 +72,8 @@ function render() {
 
     const avatar = document.createElement("div");
     avatar.className = "avatar";
+    // Optional: eigenes Bild einbinden
+    // if (m.role !== "user") { const img = document.createElement("img"); img.src="/seya.png"; img.alt="SEYA"; avatar.appendChild(img); }
 
     const bubble = document.createElement("div");
     bubble.className = "bubble";
@@ -74,19 +88,76 @@ function render() {
   chatEl.scrollTop = chatEl.scrollHeight;
 }
 
-// ---------- Helper ----------
+// ---------- Helpers ----------
 function pushAndRender(msg) {
   history.push(msg);
   saveHistory(history);
   render();
 }
 
+function showTyping() {
+  const t = document.createElement("div");
+  t.id = "typing";
+  t.className = "typing";
+  t.innerHTML = `SEYA schreibt <span></span><span></span><span></span>`;
+  chatEl.appendChild(t);
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+function hideTyping(){ document.getElementById("typing")?.remove(); }
+
+// Standort aus User-Text erkennen
+function detectLocationFromText(text) {
+  const t = (text || "").toLowerCase();
+  if (t.includes("ostermiething")) return "ostermiething";
+  if (t.includes("mattighofen"))   return "mattighofen";
+  return null;
+}
+
+// Buchungs-Buttons einblenden
+function appendBookingCTA(location) {
+  const url = TERMINGO[location];
+  if (!url) return;
+
+  const wrap = document.createElement("div");
+  wrap.className = "cta-wrap";
+
+  const label = document.createElement("div");
+  label.className = "cta-label";
+  label.textContent = "Schnell buchen:";
+
+  const btn = document.createElement("a");
+  btn.className = "cta-btn";
+  btn.href = url;
+  btn.target = "_blank";
+  btn.rel = "noopener";
+  btn.textContent = "Termin online buchen";
+
+  wrap.appendChild(label);
+  wrap.appendChild(btn);
+
+  const phone = PHONE[location];
+  if (phone) {
+    const tel = document.createElement("a");
+    tel.className = "cta-btn outline";
+    tel.href = `tel:${phone}`;
+    tel.textContent = "Telefonisch buchen";
+    wrap.appendChild(tel);
+  }
+
+  chatEl.appendChild(wrap);
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
 // ---------- Senden / API-Aufruf ----------
 async function talkToSEYA(text) {
-  // eigene Nachricht
+  // User-Nachricht anzeigen
   pushAndRender({ role: "user", content: text });
 
-  // Typing-Indicator einfügen
+  // Standort mitschneiden, falls genannt
+  const loc = detectLocationFromText(text);
+  if (loc) selectedLocation = loc;
+
+  // Typing-Indicator
   const typingIndex = history.length;
   pushAndRender({ role: "assistant", content: "Seya tippt …" });
 
@@ -101,19 +172,26 @@ async function talkToSEYA(text) {
     });
 
     const data = await res.json();
+    const reply = data?.reply || "Entschuldige, ich konnte gerade nichts empfangen.";
 
     // Typing-Indicator durch echte Antwort ersetzen
-    history[typingIndex] = {
-      role: "assistant",
-      content: data?.reply || "Entschuldige, ich konnte gerade nichts empfangen."
-    };
+    history[typingIndex] = { role: "assistant", content: reply };
     saveHistory(history);
     render();
+
+    // Falls Standort noch nicht gesetzt, versuche ihn aus der Bot-Antwort zu lesen
+    if (!selectedLocation) {
+      const last = (history[history.length - 1]?.content || "").toLowerCase();
+      if (last.includes("ostermiething")) selectedLocation = "ostermiething";
+      if (last.includes("mattighofen"))   selectedLocation = "mattighofen";
+    }
+
+    // Buttons einblenden, wenn Standort klar ist
+    if (selectedLocation) {
+      appendBookingCTA(selectedLocation);
+    }
   } catch (e) {
-    history[typingIndex] = {
-      role: "assistant",
-      content: "Fehler: " + (e?.message || String(e))
-    };
+    history[typingIndex] = { role: "assistant", content: "Fehler: " + (e?.message || String(e)) };
     saveHistory(history);
     render();
   } finally {
@@ -131,11 +209,12 @@ formEl?.addEventListener("submit", (e) => {
   talkToSEYA(text);
 });
 
-// Optional: Reset-Funktion (z. B. an einen Button hängen)
-// document.getElementById("reset")?.addEventListener("click", () => {
+// Optional: Reset-Button einhängen (falls vorhanden)
+// document.getElementById("reset-chat")?.addEventListener("click", () => {
 //   resetHistory();
 //   history = [{ role: "assistant", content: initialGreeting }];
 //   saveHistory(history);
 //   render();
 // });
+
 
