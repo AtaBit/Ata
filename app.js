@@ -12,16 +12,32 @@ const PHONE = {
 
 // Standort & Leistung erkennen (einfache RegEx – jederzeit erweiterbar)
 const LOCATION_REGEX = /(ostermiething|mattighofen)/i;
-const SERVICE_REGEX = new RegExp(
-  [
-    "haarschnitt","farbe","tönung","balayage","strähnen","dauerwelle","styling",
-    "kosmetik","gesichtsbehandlung","microneedling","peeling",
-    "permanent ?make[- ]?up","microblading","augenbrauen","lippen","eyeliner","wimpernkranz",
-    "braut","brautstyling","make-?up","probe",
-    "herren","bart","maschinenschnitt"
-  ].join("|"),
-  "i"
-);
+// Präzise Erkennung von Dienstleistungen — nur ganze Wörter
+const SERVICE_KEYWORDS = [
+  "haarschnitt", "schnitt", "kurzhaarschnitt", "ponyschnitt",
+  "waschen", "föhnen", "styling",
+  "farbe", "tönung", "balayage", "strähnen", "oberkopf", "highlights", "dauerwelle",
+
+  "pflege", "intensivpflege", "haarkur",
+
+  "gesichtsbehandlung", "kosmetik", "microneedling", "peeling", "aquapeel",
+  "tiefenreinigung", "aknebehandlung",
+
+  "permanent make up", "permanent makeup", "microblading",
+  "augenbrauen", "lippen", "eyeliner", "wimpernkranz",
+
+  "braut", "brautstyling", "probe", "hochstecken",
+
+  "herren", "bart", "maschinenschnitt"
+];
+
+// Funktion prüft, ob mindestens 1 echtes Keyword vorkommt
+function hasService(text) {
+  return SERVICE_KEYWORDS.some(word =>
+    text.split(/\W+/).includes(word.replace(/\s+/g, "").toLowerCase())
+  );
+}
+
 
 // Beginn-Nachricht
 const initialGreeting =
@@ -75,8 +91,9 @@ function deriveBookingState(messages) {
     const found = loc[1].toLowerCase();
     location = found.includes("oster") ? "ostermiething" : "mattighofen";
   }
-  const hasService = SERVICE_REGEX.test(text);
-  return { location, hasService };
+  const hasServiceSelected = hasService(text);
+return { location, hasService: hasServiceSelected };
+
 }
 
 function render() {
@@ -93,25 +110,27 @@ function render() {
 
   // CTA – nur wenn Standort & Leistung vorhanden
   const state = deriveBookingState(history);
-  const old = document.getElementById("seya-cta");
-  if (old) old.remove();
-  if (state.location && state.hasService) {
-    const cta = document.createElement("div");
-    cta.id = "seya-cta";
-    cta.className = "cta-bar";
-    cta.innerHTML = `
-      <div class="cta-hint">
-        Bitte auf <strong>„Termin online buchen“</strong> tippen – ich leite dich zur Buchungsseite weiter.
-      </div>
-      <div class="cta-actions">
-        <a class="cta-btn primary" href="${BOOK_LINKS[state.location]}" target="_blank" rel="noopener">
-          Termin online buchen
-        </a>
-        <a class="cta-btn" href="tel:${PHONE[state.location]}">Telefonisch buchen</a>
-      </div>
-    `;
-    chatEl.appendChild(cta);
-  }
+const old = document.getElementById("seya-cta");
+if (old) old.remove();
+
+if (state.location && state.hasService) {
+  const cta = document.createElement("div");
+  cta.id = "seya-cta";
+  cta.className = "cta-bar";
+  cta.innerHTML = `
+    <div class="cta-hint">
+      Super! Bitte auf „Termin online buchen“ tippen – ich leite dich direkt zur Buchungsseite weiter.
+    </div>
+    <div class="cta-actions">
+      <a class="cta-btn primary" href="${BOOK_LINKS[state.location]}" target="_blank">
+        Termin online buchen
+      </a>
+      <a class="cta-btn" href="tel:${PHONE[state.location]}">Telefonisch buchen</a>
+    </div>
+  `;
+  chatEl.appendChild(cta);
+}
+
 
   chatEl.scrollTop = chatEl.scrollHeight;
 }
