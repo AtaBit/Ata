@@ -88,7 +88,13 @@ h1{
   word-break: break-word;
 }
 .msg.user .bubble{ background: var(--bubble-user); }
-.msg.bot .bubble{ background: var(--bubble-bot); }
+
+.msg.bot .bubble {
+  background: var(--bubble-bot);
+  max-width: 65%;
+  font-size: 15px;
+}
+
 
 .typing{
   width:46px; height:14px; display:flex; gap:6px; align-items:center; margin: 6px 0 0;
