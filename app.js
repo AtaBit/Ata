@@ -94,8 +94,10 @@ function updateActions() {
   if (ready) {
     const url =
       loc === "ostermiething"
-        ? "https://meintermin.termingo.de/preisliste/326"
-        : "https://meintermin.termingo.de/preisliste/335";
+        ? "https://meintermin.termingo.de/preisliste/326";
+        
+      loc === "mattighofen"
+    ?   "https://meintermin.termingo.de/preisliste/335";
 
     btn.onclick = () => window.open(url, "_blank", "noopener,noreferrer");
   }
