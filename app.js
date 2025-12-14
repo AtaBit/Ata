@@ -13,19 +13,32 @@ let history = [
 ];
 
 function render() {
-  if (!chatEl) return console.error("#chat nicht gefunden");
   chatEl.innerHTML = "";
   for (const m of history) {
-    const div = document.createElement("div");
-    div.className = `msg ${m.role === "user" ? "user" : "bot"}`;
-    // **bold** erlauben, Rest plain
-    div.innerHTML = String(m.content || "")
-      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-    chatEl.appendChild(div);
+    const wrap = document.createElement("div");
+    wrap.className = `msg ${m.role === "user" ? "user" : "bot"}`;
+
+    const avatar = document.createElement("div");
+    avatar.className = "avatar";
+    // Optional: eigenes Bild für SEYA (z.B. /seya.png). Sonst bleibt stylischer Kreis.
+    if (m.role !== "user") {
+      const img = document.createElement("img");
+      img.src = "/seya.png"; // <- falls du ein Icon hast, sonst Zeile entfernen
+      img.alt = "SEYA";
+      avatar.appendChild(img);
+    }
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.innerHTML = String(m.content || "").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+
+    wrap.appendChild(avatar);
+    wrap.appendChild(bubble);
+    chatEl.appendChild(wrap);
   }
   chatEl.scrollTop = chatEl.scrollHeight;
 }
-render();
+
 
 function showTyping() {
   const typingDiv = document.createElement("div");
