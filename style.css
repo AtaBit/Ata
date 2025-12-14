@@ -156,3 +156,21 @@ h1{
   .chat{ max-height: 66vh }
   .msg{ max-width: 96% }
 }
+
+.cta-wrap{
+  display:flex; align-items:center; gap:.6rem; flex-wrap:wrap;
+  margin:.6rem 0 1rem;
+}
+.cta-label{ font-size:.9rem; opacity:.85 }
+.cta-btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:.55rem .9rem; border-radius:10px; text-decoration:none;
+  background:#6d5efb; color:#fff; font-weight:600;
+  transition:transform .08s ease, opacity .2s ease;
+}
+.cta-btn:hover{ opacity:.92 }
+.cta-btn:active{ transform:translateY(1px) }
+.cta-btn.outline{
+  background:transparent; color:#c8c9ff; border:1px solid rgba(200,201,255,.3);
+}
+
