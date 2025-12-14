@@ -3,26 +3,27 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Assistentin SEYA – Masterclass Hair & Beauty</title>
+  <title>SEYA – Masterclass Hair & Beauty</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
+
 <body>
   <main class="wrap">
     <header class="topbar">
       <div class="brand">
-        <img src="./seya-avatar.png" alt="SEYA" class="avatar" />
+        <img src="./seya-avatar.png" class="avatar" alt="SEYA" />
         <div class="title">
           <h1>Assistentin <span>SEYA</span></h1>
-          <p>Fragen zu Leistungen, Preisen & Terminen – ich helfe sofort.</p>
+          <p>Ich helfe dir bei Preisen, Leistungen & Terminen.</p>
         </div>
       </div>
-      <button id="reset-btn" class="reset" title="Neuen Chat starten">Neu</button>
+      <button id="reset-btn" class="reset">Neu</button>
     </header>
 
-    <section id="chat" class="chat" role="log" aria-live="polite"></section>
+    <section id="chat" class="chat"></section>
 
-    <form id="chat-form" class="composer" autocomplete="off">
-      <input id="chat-input" type="text" placeholder="Schreib SEYA…" />
+    <form id="chat-form" class="composer">
+      <input id="chat-input" type="text" placeholder="Schreib SEYA…" autocomplete="off" />
       <button id="send-btn" type="submit">Senden</button>
     </form>
   </main>
