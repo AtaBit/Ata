@@ -1,4 +1,6 @@
-/* === SEYA – Webchat ===================================================== */
+/* ===========================
+   SEYA – Masterclass KI Chat
+   =========================== */
 
 const BOOK_LINKS = {
   ostermiething: "https://meintermin.termingo.de/preisliste/326",
@@ -9,8 +11,8 @@ const PHONE = {
   mattighofen: "+436766627776",
 };
 
-/* --------- Storage mit Auto-Expire (30 min) ---------- */
-const STORE_KEY = "seya_history_v3";
+/* --- Session Storage mit 30-Minuten Timeout --- */
+const STORE_KEY = "seya_history_v4";
 const MAX_AGE_MIN = 30;
 
 function loadHistory() {
@@ -18,70 +20,74 @@ function loadHistory() {
     const raw = sessionStorage.getItem(STORE_KEY);
     if (!raw) return null;
     const obj = JSON.parse(raw);
-    if (!obj || !Array.isArray(obj.messages)) return null;
-    if (Date.now() - obj.ts > MAX_AGE_MIN * 60 * 1000) {
+    if (!obj?.messages) return null;
+    if (Date.now() - obj.ts > MAX_AGE_MIN * 60000) {
       sessionStorage.removeItem(STORE_KEY);
       return null;
     }
     return obj.messages;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
+
 function saveHistory(messages) {
-  try {
-    sessionStorage.setItem(STORE_KEY, JSON.stringify({ ts: Date.now(), messages }));
-  } catch {}
+  sessionStorage.setItem(STORE_KEY, JSON.stringify({ ts: Date.now(), messages }));
 }
+
 function resetHistory() {
   sessionStorage.removeItem(STORE_KEY);
 }
 
-/* ----------------- Initial Greeting ------------------ */
+/* --- Begrüßung --- */
 const initialGreeting =
-  "Hi, ich bin **SEYA** – deine Assistentin von Masterclass Hair & Beauty. " +
-  "In welchem Standort darf ich dir helfen – Ostermiething oder Mattighofen?";
+  "Hi, ich bin **SEYA** – deine Assistentin von Masterclass Hair & Beauty. In welchem Standort darf ich dir helfen – Ostermiething oder Mattighofen?";
 
-let history = loadHistory() || [{ role: "assistant", content: initialGreeting }];
+let history = loadHistory() || [
+  { role: "assistant", content: initialGreeting }
+];
 
-/* ----------------- DOM Refs ------------------ */
+/* --- DOM --- */
 let chatEl, formEl, inputEl, sendBtn, resetBtn;
 
-/* ----------------- Rendering ------------------ */
-function el(tag, cls, html) {
-  const n = document.createElement(tag);
-  if (cls) n.className = cls;
-  if (html != null) n.innerHTML = html;
-  return n;
+/* ===========================
+   Chat Rendering
+   =========================== */
+function createEl(tag, cls, html) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (html != null) e.innerHTML = html;
+  return e;
 }
 
 function render() {
-  if (!chatEl) return;
   chatEl.innerHTML = "";
-  for (const m of history) {
-    const row = el("div", `msg ${m.role === "user" ? "user" : "bot"}`);
-    if (m.role !== "user") row.appendChild(el("div", "icon", "💬"));
-    const bubble = el(
+  history.forEach(m => {
+    const row = createEl("div", `msg ${m.role === "user" ? "user" : "bot"}`);
+    if (m.role !== "user") row.appendChild(createEl("div", "icon", "💬"));
+    const bubble = createEl(
       "div",
       "bubble",
-      String(m.content || "").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      m.content.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
     );
     row.appendChild(bubble);
     chatEl.appendChild(row);
-  }
-  showCTAIfReady(); // CTA abhängig von Zustand
+  });
+
+  showCTA();  
   chatEl.scrollTop = chatEl.scrollHeight;
 }
 
+/* --- Typing Indicator --- */
 function showTyping() {
-  const row = el("div", "msg bot");
+  const row = createEl("div", "msg bot");
   row.id = "typing";
-  row.appendChild(el("div", "icon", "💬"));
-  const b = el("div", "bubble");
-  const dots = el("div", "typing");
-  dots.appendChild(el("div", "dot"));
-  dots.appendChild(el("div", "dot"));
-  dots.appendChild(el("div", "dot"));
+  row.appendChild(createEl("div", "icon", "💬"));
+
+  const b = createEl("div", "bubble");
+  const dots = createEl("div", "typing");
+  dots.appendChild(createEl("div","dot"));
+  dots.appendChild(createEl("div","dot"));
+  dots.appendChild(createEl("div","dot"));
+
   b.appendChild(dots);
   row.appendChild(b);
   chatEl.appendChild(row);
@@ -92,149 +98,133 @@ function hideTyping() {
   if (t) t.remove();
 }
 
-/* ----------- Standort + Service Erkennung ----------- */
+/* ===========================
+   Dienstleistung & Standort
+   =========================== */
+function norm(s){
+  return String(s||"")
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss")
+    .replace(/[^a-z0-9\s]/g," ")
+    .replace(/\s+/g," ")
+    .trim();
+}
 
-// Sehr präzise Erkennung (ganze Wörter)
 const SERVICE_KEYWORDS = [
-  // Haare
-  "haarschnitt",
-  "schnitt",
-  "kurzhaarschnitt",
-  "ponyschnitt",
-  "waschen",
-  "föhnen",
-  "styling",
-  "farbe",
-  "tönung",
-  "balayage",
-  "strähnen",
-  "oberkopf",
-  "highlights",
-  "dauerwelle",
-  "pflege",
-  "intensivpflege",
-  "haarkur",
-  // Kosmetik
-  "gesichtsbehandlung",
-  "kosmetik",
-  "microneedling",
-  "peeling",
-  "aquapeel",
-  "tiefenreinigung",
-  "aknebehandlung",
-  // PMU
-  "permanent make up",
-  "permanent makeup",
-  "microblading",
-  "augenbrauen",
-  "lippen",
-  "eyeliner",
-  "wimpernkranz",
-  // Braut
-  "braut",
-  "brautstyling",
-  "probe",
-  "hochstecken",
-  // Herren
-  "herren",
-  "bart",
-  "maschinenschnitt"
+  "haarschnitt","schnitt","kurzhaarschnitt","ponyschnitt",
+  "waschen","foehnen","styling",
+  "farbe","toenung","ansatz","balayage","ombre","straehnen","highlights","dauerwelle",
+  "pflege","intensivpflege","kur","haarkur","maske",
+  "gesichtsbehandlung","kosmetik","microneedling","peeling","aquapeel",
+  "tiefenreinigung","aknebehandlung","express",
+  "permanent make up","microblading","augenbrauen","lippen","eyeliner","wimpernkranz",
+  "braut","brautstyling","brautfrisur","probe","hochstecken",
+  "herren","bart","maschinenschnitt"
 ];
 
-// Enthält Text eines Nutzers mindestens ein echtes Keyword?
-function hasServiceKeyword(text) {
-  const flat = text.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
-  const tokens = flat.split(" ");
-  // Spezialfälle mit Leerzeichen
-  if (flat.includes("permanent make up") || flat.includes("permanent makeup")) return true;
+function hasServiceKeyword(text){
+  const flat = norm(text);
+  const tokens = new Set(flat.split(" "));
 
-  return SERVICE_KEYWORDS.some(word => {
-    if (word.includes(" ")) return flat.includes(word); // Multiword
-    return tokens.includes(word);
+  if (flat.includes("permanent make up")) return true;
+
+  return SERVICE_KEYWORDS.some(w=>{
+    const n = norm(w);
+    if (n.includes(" ")) return flat.includes(n);
+    return tokens.has(n);
   });
 }
 
-function deriveBookingState(historyArr) {
-  const allUserText = historyArr
-    .filter(m => m.role === "user")
-    .map(m => String(m.content || "").toLowerCase())
+function deriveBookingState(historyArr){
+  const userTexts = historyArr.filter(m=>m.role==="user")
+    .map(m=>m.content.toLowerCase())
     .join(" . ");
 
   let location = null;
-  if (/\bostermiething\b/i.test(allUserText)) location = "ostermiething";
-  if (/\bmattighofen\b/i.test(allUserText)) location = "mattighofen";
+  if (/\bostermiething\b/.test(userTexts)) location = "ostermiething";
+  if (/\bmattighofen\b/.test(userTexts))  location = "mattighofen";
 
-  // Dienstleistung aus dem letzten User-Statement bevorzugen
-  const lastUser = [...historyArr].reverse().find(m => m.role === "user");
-  const hasService =
-    lastUser ? hasServiceKeyword(String(lastUser.content || "")) : false;
+  const lastUser = [...historyArr].reverse().find(m=>m.role==="user");
+  const hasService = lastUser ? hasServiceKeyword(lastUser.content) : false;
 
   return { location, hasService };
 }
 
-/* ---------------- CTA nur wenn ready ----------------- */
-function showCTAIfReady() {
+/* ===========================
+   CTA Bar
+   =========================== */
+function showCTA(){
   const state = deriveBookingState(history);
-  const prev = document.getElementById("seya-cta");
-  if (prev) prev.remove();
 
-  if (state.location && state.hasService) {
-    const bar = el("div", "cta-bar");
+  const old = document.getElementById("seya-cta");
+  if (old) old.remove();
+
+  if (state.location && state.hasService){
+    const bar = createEl("div","cta-bar");
     bar.id = "seya-cta";
-    const hint = el(
-      "div",
-      "cta-hint",
-      "Super! Bitte auf „Termin online buchen“ tippen – ich leite dich direkt zur Buchungsseite weiter."
-    );
-    const actions = el("div", "cta-actions");
-    const a1 = el("a", "cta-btn primary", "Termin online buchen");
-    a1.href = BOOK_LINKS[state.location];
-    a1.target = "_blank";
-    const a2 = el("a", "cta-btn", "Telefonisch buchen");
-    a2.href = "tel:" + PHONE[state.location];
 
-    actions.appendChild(a1);
-    actions.appendChild(a2);
+    const hint = createEl("div","cta-hint",
+      "Perfekt! Bitte auf „Termin online buchen“ tippen – ich leite dich weiter."
+    );
+
+    const acts = createEl("div","cta-actions");
+    const a1 = createEl("a","cta-btn primary","Termin online buchen");
+    a1.href = BOOK_LINKS[state.location];
+    a1.target="_blank";
+
+    const a2 = createEl("a","cta-btn","Telefonisch buchen");
+    a2.href = "tel:"+PHONE[state.location];
+
+    acts.appendChild(a1);
+    acts.appendChild(a2);
+
     bar.appendChild(hint);
-    bar.appendChild(actions);
+    bar.appendChild(acts);
     chatEl.appendChild(bar);
   }
 }
 
-/* ---------------- Senden & API Call ----------------- */
-async function askSeya(text) {
-  history.push({ role: "user", content: text });
+/* ===========================
+   Senden
+   =========================== */
+async function askSEYA(text){
+  history.push({ role:"user", content:text });
   saveHistory(history);
   render();
-  inputEl.value = "";
-  sendBtn.disabled = true;
 
+  inputEl.value="";
+  sendBtn.disabled=true;
   showTyping();
-  try {
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: history }),
+
+  try{
+    const response = await fetch("/api/chat",{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({ messages: history })
     });
-    const data = await res.json();
+    const data = await response.json();
     hideTyping();
 
-    if (data?.reply) {
-      history.push({ role: "assistant", content: data.reply });
+    if (data.reply){
+      history.push({ role:"assistant", content:data.reply });
     } else {
-      history.push({ role: "assistant", content: "Entschuldige, ich habe gerade keine Antwort erhalten." });
+      history.push({ role:"assistant", content:"Ich habe gerade keine Antwort bekommen." });
     }
-  } catch (err) {
+  } catch(err){
     hideTyping();
-    history.push({ role: "assistant", content: "Fehler: " + (err?.message || String(err)) });
+    history.push({ role:"assistant", content:"Fehler: "+err.message });
   }
+
   saveHistory(history);
-  sendBtn.disabled = false;
+  sendBtn.disabled=false;
   render();
 }
 
-/* ---------------- Boot ----------------- */
-window.addEventListener("DOMContentLoaded", () => {
+/* ===========================
+   Start
+   =========================== */
+window.addEventListener("DOMContentLoaded",()=>{
   chatEl = document.getElementById("chat");
   formEl = document.getElementById("chat-form");
   inputEl = document.getElementById("chat-input");
@@ -243,21 +233,20 @@ window.addEventListener("DOMContentLoaded", () => {
 
   render();
 
-  formEl.addEventListener("submit", (e) => {
+  formEl.addEventListener("submit",e=>{
     e.preventDefault();
     const text = inputEl.value.trim();
-    if (!text) return;
-    askSeya(text);
+    if (text) askSEYA(text);
   });
 
-  resetBtn.addEventListener("click", () => {
+  resetBtn.addEventListener("click",()=>{
     resetHistory();
-    history = [{ role: "assistant", content: initialGreeting }];
+    history = [{ role:"assistant", content:initialGreeting }];
     saveHistory(history);
     render();
-    inputEl.focus();
   });
 });
+
 
 
 
