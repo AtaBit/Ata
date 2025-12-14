@@ -1,18 +1,32 @@
-// === SEYA Webchat – stabile Version ===
-const chatEl  = document.getElementById("chat");
-const formEl  = document.getElementById("chat-form");
-const inputEl = document.getElementById("chat-input");
-const sendBtn = document.getElementById("send-btn");
+// === SEYA Webchat – robuster Start mit Begrüßung ===
+const initialGreeting =
+  "Hi, ich bin **SEYA** – deine Assistentin von Masterclass Hair & Beauty. In welchem Standort darf ich dir helfen – Ostermiething oder Mattighofen?";
 
-let history = [
-  {
-    role: "assistant",
-    content:
-      "Hi, ich bin SEYA – deine Assistentin von Masterclass Hair & Beauty. In welchem Standort darf ich dir helfen – Ostermiething oder Mattighofen?"
+// Verlauf aus LocalStorage laden (optional)
+function loadHistory() {
+  try {
+    const raw = localStorage.getItem("seya_history");
+    if (raw) return JSON.parse(raw);
+  } catch (_) {}
+  return [];
+}
+function saveHistory(h) {
+  try { localStorage.setItem("seya_history", JSON.stringify(h)); } catch (_) {}
+}
+
+let history = loadHistory();
+
+function ensureGreeting() {
+  // Wenn noch keine Assistant-Nachricht existiert → Begrüßung einfügen
+  if (!history.some(m => m?.role === "assistant")) {
+    history.unshift({ role: "assistant", content: initialGreeting });
   }
-];
+}
+
+let chatEl, formEl, inputEl, sendBtn;
 
 function render() {
+  if (!chatEl) return; // Sicherheitsnetz
   chatEl.innerHTML = "";
   for (const m of history) {
     const wrap = document.createElement("div");
@@ -20,12 +34,12 @@ function render() {
 
     const avatar = document.createElement("div");
     avatar.className = "avatar";
-    // Optional: eigenes Bild für SEYA (z.B. /seya.png). Sonst bleibt stylischer Kreis.
     if (m.role !== "user") {
-      const img = document.createElement("img");
-      img.src = "/seya.png"; // <- falls du ein Icon hast, sonst Zeile entfernen
-      img.alt = "SEYA";
-      avatar.appendChild(img);
+      // Optionales Bild: auskommentieren, wenn du keins hast
+      // const img = document.createElement("img");
+      // img.src = "/seya.png";
+      // img.alt = "SEYA";
+      // avatar.appendChild(img);
     }
 
     const bubble = document.createElement("div");
@@ -37,7 +51,25 @@ function render() {
     chatEl.appendChild(wrap);
   }
   chatEl.scrollTop = chatEl.scrollHeight;
+  saveHistory(history);
 }
+
+// Warten bis DOM da ist → dann Elemente holen, Begrüßung setzen, rendern
+document.addEventListener("DOMContentLoaded", () => {
+  chatEl  = document.getElementById("chat");
+  formEl  = document.getElementById("chat-form");
+  inputEl = document.getElementById("chat-input");
+  sendBtn = document.getElementById("send-btn");
+
+  if (!chatEl || !formEl || !inputEl) {
+    console.error("Chat-Elemente nicht gefunden. Prüfe IDs in index.html.");
+    return;
+  }
+
+  ensureGreeting();
+  render();
+});
+
 
 
 function showTyping() {
