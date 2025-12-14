@@ -3,24 +3,26 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SEYA – Friseur Assistentin</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <meta name="theme-color" content="#111827">
+  <title>Assistentin SEYA – Masterclass Hair & Beauty</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
   <main class="container">
-    <header>
-      <h1>💇‍♀️ Assistentin <span class="SEYA">SEYA</span></h1>
-      <p class="sub">Fragen zu Preisen, Leistungen & Terminen – SEYA hilft dir sofort.</p>
+    <header class="topbar">
+      <div class="brand">
+        <div class="avatar-circle">S</div>
+        <div>
+          <h1>Assistentin <span class="seya">SEYA</span></h1>
+          <div class="sub">Fragen zu Preisen, Leistungen & Terminen – SEYA hilft dir sofort.</div>
+        </div>
+      </div>
+      <button id="reset-btn" class="reset">Neu starten</button>
     </header>
 
-    <section id="chat" class="chat"></section>
+    <section id="chat" class="chat" aria-live="polite"></section>
 
-    <form id="chat-form" class="composer">
-      <input id="chat-input" type="text" placeholder="Schreib SEYA…" autocomplete="off" />
+    <form id="chat-form" class="composer" autocomplete="off">
+      <input id="chat-input" type="text" placeholder="Schreib SEYA…" />
       <button id="send-btn" type="submit">Senden</button>
     </form>
   </main>
