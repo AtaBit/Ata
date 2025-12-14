@@ -1,34 +1,28 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SEYA – Masterclass Hair & Beauty</title>
-  <link rel="stylesheet" href="./style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Assistentin SEYA</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
-
 <body>
-  <main class="wrap">
-    <header class="topbar">
-      <div class="brand">
-        <img src="./seya-avatar.png" class="avatar" alt="SEYA" />
-        <div class="title">
-          <h1>Assistentin <span>SEYA</span></h1>
-          <p>Ich helfe dir bei Preisen, Leistungen & Terminen.</p>
-        </div>
-      </div>
-      <button id="reset-btn" class="reset">Neu</button>
-    </header>
 
-    <section id="chat" class="chat"></section>
+  <div id="chat-container">
+    <div id="chat"></div>
 
-    <form id="chat-form" class="composer">
-      <input id="chat-input" type="text" placeholder="Schreib SEYA…" autocomplete="off" />
-      <button id="send-btn" type="submit">Senden</button>
+    <!-- Aktionen (Buchungs-Buttons) -->
+    <div id="actions" class="actions hidden">
+      <button id="bookBtn" class="primary">Termin online buchen</button>
+    </div>
+
+    <form id="form">
+      <input id="input" autocomplete="off" placeholder="Nachricht schreiben…" />
+      <button id="send">Senden</button>
     </form>
-  </main>
+  </div>
 
-  <script src="./app.js" defer></script>
+  <script src="app.js"></script>
 </body>
 </html>
 
