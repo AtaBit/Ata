@@ -208,11 +208,6 @@ Immer **eine** klare Frage, z. B.:
 
 -------------------------------------------------------
 
-
-
-`;
-
-
      
     const mapped = [
       { role: 'system', content: systemPrompt },
