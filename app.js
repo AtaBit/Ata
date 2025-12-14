@@ -1,23 +1,35 @@
-// === SEYA Webchat – Komplettversion mit Termingo-Buttons ===
+// ============ Konfiguration ============
 
-// ---- Termingo-Links (fertig eingetragen) ----
-const TERMINGO = {
+// Termingo-Links & Telefon je Standort
+const BOOK_LINKS = {
   ostermiething: "https://meintermin.termingo.de/preisliste/326",
-  mattighofen:   "https://meintermin.termingo.de/preisliste/335"
+  mattighofen:  "https://meintermin.termingo.de/preisliste/335",
 };
-
-// (Optional) Telefon-Buttons
 const PHONE = {
   ostermiething: "+436609797072",
-  mattighofen:   "+436766627776"
+  mattighofen:   "+436766627776",
 };
 
-// Merkt den Standort, sobald genannt
-let selectedLocation = null;
+// Standort & Leistung erkennen (einfache RegEx – jederzeit erweiterbar)
+const LOCATION_REGEX = /(ostermiething|mattighofen)/i;
+const SERVICE_REGEX = new RegExp(
+  [
+    "haarschnitt","farbe","tönung","balayage","strähnen","dauerwelle","styling",
+    "kosmetik","gesichtsbehandlung","microneedling","peeling",
+    "permanent ?make[- ]?up","microblading","augenbrauen","lippen","eyeliner","wimpernkranz",
+    "braut","brautstyling","make-?up","probe",
+    "herren","bart","maschinenschnitt"
+  ].join("|"),
+  "i"
+);
 
-// ---------- Storage mit Auto-Expire (pro Tab) ----------
+// Beginn-Nachricht
+const initialGreeting =
+  "Hi, ich bin **SEYA** – deine Assistentin von Masterclass Hair & Beauty. In welchem Standort darf ich dir helfen – Ostermiething oder Mattighofen?";
+
+// ============ Verlauf speichern (30 Min Auto-Reset) ============
 const STORE_KEY = "seya_history_v2";
-const MAX_AGE_MIN = 30; // nach 30 Minuten Inaktivität neu starten
+const MAX_AGE_MIN = 30;
 
 function loadHistory() {
   try {
@@ -35,186 +47,155 @@ function loadHistory() {
 }
 function saveHistory(messages) {
   try {
-    sessionStorage.setItem(
-      STORE_KEY,
-      JSON.stringify({ ts: Date.now(), messages })
-    );
+    sessionStorage.setItem(STORE_KEY, JSON.stringify({ ts: Date.now(), messages }));
   } catch {}
 }
-function resetHistory() {
-  sessionStorage.removeItem(STORE_KEY);
+function resetHistory() { sessionStorage.removeItem(STORE_KEY); }
+
+// ============ UI / Chat ============
+
+let chatEl, formEl, inputEl, sendBtn;
+let history = loadHistory() || [];
+
+function ensureGreeting() {
+  if (!history.some(m => m?.role === "assistant")) {
+    history.push({ role: "assistant", content: initialGreeting });
+  }
+}
+ensureGreeting();
+
+function mdStrong(s){ return String(s||"").replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>"); }
+
+// Standort/Leistung aus Gespräch ableiten
+function deriveBookingState(messages) {
+  const text = (messages||[]).map(m=>m?.content||"").join("\n").toLowerCase();
+  let location = null;
+  const loc = text.match(LOCATION_REGEX);
+  if (loc) {
+    const found = loc[1].toLowerCase();
+    location = found.includes("oster") ? "ostermiething" : "mattighofen";
+  }
+  const hasService = SERVICE_REGEX.test(text);
+  return { location, hasService };
 }
 
-// ---------- Begrüßung ----------
-const initialGreeting =
-  "Hi, ich bin **SEYA** – deine Assistentin von Masterclass Hair & Beauty. In welchem Standort darf ich dir helfen – Ostermiething oder Mattighofen?";
-
-// Verlauf laden oder mit Begrüßung starten
-let history = loadHistory() || [
-  { role: "assistant", content: initialGreeting }
-];
-saveHistory(history);
-
-// ---------- DOM-Refs ----------
-const chatEl  = document.getElementById("chat");
-const formEl  = document.getElementById("chat-form");
-const inputEl = document.getElementById("chat-input");
-const sendBtn = document.getElementById("send-btn");
-
-// ---------- Rendering ----------
 function render() {
-  if (!chatEl) return;
   chatEl.innerHTML = "";
-
   for (const m of history) {
-    const wrap = document.createElement("div");
-    wrap.className = `msg ${m.role === "user" ? "user" : "bot"}`;
-
-    const avatar = document.createElement("div");
-    avatar.className = "avatar";
-    // Optional: eigenes Bild einbinden
-    // if (m.role !== "user") { const img = document.createElement("img"); img.src="/seya.png"; img.alt="SEYA"; avatar.appendChild(img); }
-
+    const row = document.createElement("div");
+    row.className = `msg ${m.role === "user" ? "user" : "bot"}`;
     const bubble = document.createElement("div");
     bubble.className = "bubble";
-    bubble.innerHTML = String(m.content || "")
-      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+    bubble.innerHTML = mdStrong(m.content);
+    row.appendChild(bubble);
+    chatEl.appendChild(row);
+  }
 
-    wrap.appendChild(avatar);
-    wrap.appendChild(bubble);
-    chatEl.appendChild(wrap);
+  // CTA – nur wenn Standort & Leistung vorhanden
+  const state = deriveBookingState(history);
+  const old = document.getElementById("seya-cta");
+  if (old) old.remove();
+  if (state.location && state.hasService) {
+    const cta = document.createElement("div");
+    cta.id = "seya-cta";
+    cta.className = "cta-bar";
+    cta.innerHTML = `
+      <div class="cta-hint">
+        Bitte auf <strong>„Termin online buchen“</strong> tippen – ich leite dich zur Buchungsseite weiter.
+      </div>
+      <div class="cta-actions">
+        <a class="cta-btn primary" href="${BOOK_LINKS[state.location]}" target="_blank" rel="noopener">
+          Termin online buchen
+        </a>
+        <a class="cta-btn" href="tel:${PHONE[state.location]}">Telefonisch buchen</a>
+      </div>
+    `;
+    chatEl.appendChild(cta);
   }
 
   chatEl.scrollTop = chatEl.scrollHeight;
 }
 
-// ---------- Helpers ----------
-function pushAndRender(msg) {
-  history.push(msg);
+function push(role, content) {
+  history.push({ role, content });
   saveHistory(history);
   render();
 }
 
+let typingEl=null;
 function showTyping() {
-  const t = document.createElement("div");
-  t.id = "typing";
-  t.className = "typing";
-  t.innerHTML = `SEYA schreibt <span></span><span></span><span></span>`;
-  chatEl.appendChild(t);
+  typingEl = document.createElement("div");
+  typingEl.className = "msg bot";
+  typingEl.innerHTML = `
+    <div class="bubble">
+      <div class="typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+    </div>`;
+  chatEl.appendChild(typingEl);
   chatEl.scrollTop = chatEl.scrollHeight;
 }
-function hideTyping(){ document.getElementById("typing")?.remove(); }
-
-// Standort aus User-Text erkennen
-function detectLocationFromText(text) {
-  const t = (text || "").toLowerCase();
-  if (t.includes("ostermiething")) return "ostermiething";
-  if (t.includes("mattighofen"))   return "mattighofen";
-  return null;
-}
-
-// Buchungs-Buttons einblenden
-function appendBookingCTA(location) {
-  const url = TERMINGO[location];
-  if (!url) return;
-
-  const wrap = document.createElement("div");
-  wrap.className = "cta-wrap";
-
-  const label = document.createElement("div");
-  label.className = "cta-label";
-  label.textContent = "Schnell buchen:";
-
-  const btn = document.createElement("a");
-  btn.className = "cta-btn";
-  btn.href = url;
-  btn.target = "_blank";
-  btn.rel = "noopener";
-  btn.textContent = "Termin online buchen";
-
-  wrap.appendChild(label);
-  wrap.appendChild(btn);
-
-  const phone = PHONE[location];
-  if (phone) {
-    const tel = document.createElement("a");
-    tel.className = "cta-btn outline";
-    tel.href = `tel:${phone}`;
-    tel.textContent = "Telefonisch buchen";
-    wrap.appendChild(tel);
+function hideTyping() {
+  if (typingEl) {
+    typingEl.remove();
+    typingEl=null;
   }
-
-  chatEl.appendChild(wrap);
-  chatEl.scrollTop = chatEl.scrollHeight;
 }
 
-// ---------- Senden / API-Aufruf ----------
+// ============ API Call ============
 async function talkToSEYA(text) {
-  // User-Nachricht anzeigen
-  pushAndRender({ role: "user", content: text });
-
-  // Standort mitschneiden, falls genannt
-  const loc = detectLocationFromText(text);
-  if (loc) selectedLocation = loc;
-
-  // Typing-Indicator
-  const typingIndex = history.length;
-  pushAndRender({ role: "assistant", content: "Seya tippt …" });
-
-  sendBtn.disabled = true;
+  push("user", text);
   inputEl.value = "";
+  inputEl.focus();
+  sendBtn.disabled = true;
+  showTyping();
 
   try {
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const res = await fetch("/api/chat",{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({ messages: history })
     });
-
     const data = await res.json();
-    const reply = data?.reply || "Entschuldige, ich konnte gerade nichts empfangen.";
+    hideTyping();
 
-    // Typing-Indicator durch echte Antwort ersetzen
-    history[typingIndex] = { role: "assistant", content: reply };
-    saveHistory(history);
-    render();
-
-    // Falls Standort noch nicht gesetzt, versuche ihn aus der Bot-Antwort zu lesen
-    if (!selectedLocation) {
-      const last = (history[history.length - 1]?.content || "").toLowerCase();
-      if (last.includes("ostermiething")) selectedLocation = "ostermiething";
-      if (last.includes("mattighofen"))   selectedLocation = "mattighofen";
+    if (!res.ok) {
+      push("assistant", `Fehler: ${data?.error || res.statusText}`);
+    } else {
+      push("assistant", data.reply || "Entschuldige, ich habe gerade keine Antwort erhalten.");
     }
-
-    // Buttons einblenden, wenn Standort klar ist
-    if (selectedLocation) {
-      appendBookingCTA(selectedLocation);
-    }
-  } catch (e) {
-    history[typingIndex] = { role: "assistant", content: "Fehler: " + (e?.message || String(e)) };
-    saveHistory(history);
-    render();
+  } catch (err) {
+    hideTyping();
+    push("assistant", "Fehler: " + (err?.message || String(err)));
   } finally {
     sendBtn.disabled = false;
   }
 }
 
-// ---------- Init ----------
-render();
+// ============ Init ============
+window.addEventListener("DOMContentLoaded", () => {
+  chatEl = document.getElementById("chat");
+  formEl = document.getElementById("chat-form");
+  inputEl = document.getElementById("chat-input");
+  sendBtn = document.getElementById("send-btn");
 
-formEl?.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const text = inputEl.value.trim();
-  if (!text) return;
-  talkToSEYA(text);
+  // Reset-Button
+  document.getElementById("reset-btn").addEventListener("click", () => {
+    resetHistory();
+    history = [];
+    ensureGreeting();
+    saveHistory(history);
+    render();
+    inputEl.focus();
+  });
+
+  render();
+
+  formEl.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const text = inputEl.value.trim();
+    if (!text) return;
+    talkToSEYA(text);
+  });
 });
 
-// Optional: Reset-Button einhängen (falls vorhanden)
-// document.getElementById("reset-chat")?.addEventListener("click", () => {
-//   resetHistory();
-//   history = [{ role: "assistant", content: initialGreeting }];
-//   saveHistory(history);
-//   render();
-// });
 
 
