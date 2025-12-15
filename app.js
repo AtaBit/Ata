@@ -1,118 +1,79 @@
-// === SEYA Webchat – stabile Komplettversion ===
+// -------- persistent session (30 Min) ----------
+const STORE_KEY = "seya_history_v2";
+const MAX_AGE_MIN = 30;
+
+const loadHistory = () => {
+  try{
+    const raw = sessionStorage.getItem(STORE_KEY);
+    if(!raw) return null;
+    const obj = JSON.parse(raw);
+    if(Date.now()-obj.ts > MAX_AGE_MIN*60000){ sessionStorage.removeItem(STORE_KEY); return null; }
+    return Array.isArray(obj.messages)? obj.messages : null;
+  }catch{ return null; }
+};
+const saveHistory = (messages) => {
+  try{ sessionStorage.setItem(STORE_KEY, JSON.stringify({ts:Date.now(), messages})) }catch{}
+};
+const resetHistory = () => { sessionStorage.removeItem(STORE_KEY); location.reload(); };
+
+// -------- initial greeting ----------
 const initialGreeting =
   "Hi, ich bin **SEYA** – deine Assistentin von Masterclass Hair & Beauty. In welchem Standort darf ich dir helfen – Ostermiething oder Mattighofen?";
 
-function loadHistory() {
-  try { const raw = localStorage.getItem("seya_history"); if (raw) return JSON.parse(raw); } catch {}
-  return [];
-}
-function saveHistory(h) { try { localStorage.setItem("seya_history", JSON.stringify(h)); } catch {} }
+let history = loadHistory() || [{ role:"assistant", content: initialGreeting }];
+saveHistory(history);
 
-let history = loadHistory();
-function ensureGreeting() {
-  if (!history.some(m => m?.role === "assistant")) {
-    history.unshift({ role: "assistant", content: initialGreeting });
-  }
-}
+// -------- DOM --------
+const chatEl  = document.getElementById("chat");
+const formEl  = document.getElementById("chat-form");
+const inputEl = document.getElementById("chat-input");
+const sendBtn = document.getElementById("send-btn");
+document.getElementById("reset-btn").addEventListener("click", resetHistory);
 
-let chatEl, formEl, inputEl, sendBtn;
-
-function render() {
-  if (!chatEl) return;
+// -------- render --------
+function render(){
   chatEl.innerHTML = "";
-  for (const m of history) {
-    const wrap = document.createElement("div");
-    wrap.className = `msg ${m.role === "user" ? "user" : "bot"}`;
-
-    const avatar = document.createElement("div");
-    avatar.className = "avatar";
-    // Optional eigenes Bild:
-    // if (m.role !== "user") { const img = document.createElement("img"); img.src="/seya.png"; avatar.appendChild(img); }
-
+  history.forEach(m=>{
+    const row = document.createElement("div");
+    row.className = `msg ${m.role === "user" ? "user" : "bot"}`;
     const bubble = document.createElement("div");
     bubble.className = "bubble";
-    bubble.innerHTML = String(m.content || "").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-
-    wrap.appendChild(avatar);
-    wrap.appendChild(bubble);
-    chatEl.appendChild(wrap);
-  }
-  chatEl.scrollTop = chatEl.scrollHeight;
-  saveHistory(history);
-}
-
-function showTyping() {
-  const t = document.createElement("div");
-  t.id = "typing";
-  t.className = "typing";
-  t.innerHTML = `SEYA schreibt <span></span><span></span><span></span>`;
-  chatEl.appendChild(t);
+    bubble.innerHTML = String(m.content||"").replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>");
+    row.appendChild(bubble);
+    chatEl.appendChild(row);
+  });
   chatEl.scrollTop = chatEl.scrollHeight;
 }
-function hideTyping(){ document.getElementById("typing")?.remove(); }
+render();
 
-async function talkToSEYA(text) {
-  // Eigene Nachricht sofort zeigen
-  history.push({ role: "user", content: text });
-  render();
+// -------- talk to SEYA --------
+async function talkToSEYA(text){
+  history.push({ role:"user", content:text });
+  render(); saveHistory(history);
+  inputEl.value = ""; sendBtn.disabled = true;
 
-  inputEl.value = "";
-  sendBtn?.setAttribute("disabled", "true");
-  showTyping();
-
-  try {
-    // Debug-Log im Browser, falls nötig
-    console.debug("[SEYA] POST /api/chat payload:", { messages: history });
-
+  try{
     const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({ messages: history })
     });
+    const data = await res.json();
 
-    if (!res.ok) {
-      const errText = await res.text().catch(()=> "");
-      throw new Error(errText || `HTTP ${res.status}`);
+    if(res.ok && data?.reply){
+      history.push({ role:"assistant", content:data.reply });
+    }else{
+      history.push({ role:"assistant", content:"Entschuldige, da ging etwas schief – versuch’s bitte nochmal." });
     }
-
-    const data = await res.json().catch(()=> ({}));
-    hideTyping();
-
-    const reply = data?.reply || data?.message;
-    if (!reply) {
-      history.push({ role: "assistant", content: "Ups, keine Antwort erhalten. Versuche es bitte nochmal." });
-    } else {
-      history.push({ role: "assistant", content: reply });
-    }
-  } catch (e) {
-    hideTyping();
-    console.error("[SEYA] Fehler:", e);
-    history.push({ role: "assistant", content: `Fehler: ${String(e.message || e)}` });
-  } finally {
-    sendBtn?.removeAttribute("disabled");
-    render();
+  }catch(e){
+    history.push({ role:"assistant", content:"Netzwerkfehler – bitte prüfe die Verbindung." });
   }
+  saveHistory(history); render(); sendBtn.disabled = false;
 }
 
-// Warten bis DOM da ist, dann erst alles verdrahten
-document.addEventListener("DOMContentLoaded", () => {
-  chatEl  = document.getElementById("chat");
-  formEl  = document.getElementById("chat-form");
-  inputEl = document.getElementById("chat-input");
-  sendBtn = document.getElementById("send-btn");
-
-  if (!chatEl || !formEl || !inputEl) {
-    console.error("Chat-Elemente nicht gefunden. Prüfe IDs (#chat, #chat-form, #chat-input, #send-btn).");
-    return;
-  }
-
-  ensureGreeting();
-  render();
-
-  formEl.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const text = (inputEl.value || "").trim();
-    if (!text) return;
-    talkToSEYA(text);
-  });
+formEl.addEventListener("submit", (e)=>{
+  e.preventDefault();
+  const text = (inputEl.value||"").trim();
+  if(!text) return;
+  talkToSEYA(text);
 });
