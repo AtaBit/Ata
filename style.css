@@ -1,32 +1,159 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SEYA • Masterclass Hair & Beauty</title>
-  <link rel="stylesheet" href="./style.css" />
-</head>
-<body>
-  <main class="container">
-    <header class="header">
-      <div class="brand">
-        <div class="logo">💇‍♀️</div>
-        <div>
-          <h1>Assistentin <span class="seya">SEYA</span></h1>
-          <p class="sub">Fragen zu Preisen, Leistungen & Terminen – SEYA hilft dir sofort.</p>
-        </div>
+// seya-widget.js — Einbettbares SEYA-Chat-Widget (ohne externe CSS-Dateien)
+
+// ------- Styles dynamisch einfügen -------
+(function addStyles(){
+  const css = `
+  :root{
+    --bg:#0a0f2a; --bg2:#131b3f; --glass:#ffffff12; --glass2:#ffffff18;
+    --accent:#6f42c1; --accent2:#8b5cf6; --text:#eaf0ff; --dim:#b9c3ff; --err:#ff6b6b;
+  }
+  .seya-launcher{
+    position:fixed; right:18px; bottom:18px; z-index:999999;
+    width:56px; height:56px; border-radius:50%; border:none; cursor:pointer;
+    background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff;
+    box-shadow:0 10px 20px #0008; font-size:24px;
+  }
+  .seya-panel{
+    position:fixed; right:18px; bottom:86px; width:min(420px,92vw); height:560px;
+    display:flex; flex-direction:column; background:linear-gradient(135deg,var(--bg),var(--bg2));
+    border:1px solid #ffffff20; border-radius:16px; overflow:hidden; box-shadow:0 16px 48px #000c; z-index:999999;
+  }
+  .seya-header{
+    padding:10px 12px; display:flex; align-items:center; justify-content:space-between;
+    background:#ffffff12; border-bottom:1px solid #ffffff22; color:var(--text);
+  }
+  .seya-title{display:flex; gap:10px; align-items:center}
+  .seya-title .logo{font-size:22px}
+  .seya-title h3{margin:0; font-size:16px}
+  .seya-title p{margin:0; font-size:12px; color:var(--dim)}
+  .seya-reset{border:none; background:var(--err); color:#fff; padding:8px 10px; border-radius:10px; cursor:pointer;}
+  .seya-chat{flex:1; overflow:auto; padding:12px; display:flex; flex-direction:column; gap:10px}
+  .seya-msg{display:flex}
+  .seya-msg.user{justify-content:flex-end}
+  .seya-bubble{
+    max-width:78%; white-space:pre-wrap; padding:10px 12px; border-radius:14px; line-height:1.45; color:var(--text);
+    border:1px solid #ffffff22; background:#ffffff12;
+  }
+  .seya-msg.user .seya-bubble{
+    background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; border-bottom-right-radius:6px;
+  }
+  .seya-msg.bot .seya-bubble{border-bottom-left-radius:6px}
+  .seya-typing{font-size:12px; color:var(--dim); padding:0 14px 8px}
+  .seya-compose{display:flex; gap:8px; padding:10px; border-top:1px solid #ffffff22; background:#ffffff10}
+  .seya-input{
+    flex:1; padding:10px 12px; border-radius:12px; border:none; outline:none; color:var(--text); background:#ffffff18;
+  }
+  .seya-send{
+    width:54px; border:none; border-radius:12px; background:var(--accent2); color:#fff; font-size:18px; cursor:pointer;
+  }
+  `;
+  const el = document.createElement('style');
+  el.textContent = css;
+  document.head.appendChild(el);
+})();
+
+// ------- Persistenz (30 Min Session) -------
+const _KEY = "seya_hist_v3";
+const _AGE = 30 * 60 * 1000;
+const _load = () => {
+  try{ const raw = sessionStorage.getItem(_KEY); if(!raw) return null;
+       const o = JSON.parse(raw); if(Date.now()-o.ts>_AGE){sessionStorage.removeItem(_KEY); return null;}
+       return Array.isArray(o.messages)? o.messages : null; }catch{ return null; }
+};
+const _save = (m) => { try{ sessionStorage.setItem(_KEY, JSON.stringify({ts:Date.now(),messages:m})) }catch{} };
+const _reset = () => { sessionStorage.removeItem(_KEY); };
+
+// ------- UI erzeugen -------
+const launcher = document.createElement('button');
+launcher.className = 'seya-launcher';
+launcher.title = 'Mit SEYA chatten';
+launcher.textContent = '💬';
+document.body.appendChild(launcher);
+
+const panel = document.createElement('div');
+panel.className = 'seya-panel';
+panel.style.display = 'none';
+panel.innerHTML = `
+  <div class="seya-header">
+    <div class="seya-title">
+      <div class="logo">💇‍♀️</div>
+      <div>
+        <h3>SEYA</h3>
+        <p>Masterclass Hair & Beauty • Fragen? Ich helfe dir!</p>
       </div>
-      <button id="reset-btn" title="Neuen Chat starten">Neu starten</button>
-    </header>
+    </div>
+    <button class="seya-reset">Neu</button>
+  </div>
+  <div class="seya-chat" id="seya-chat"></div>
+  <div class="seya-typing" id="seya-typing" style="display:none">SEYA schreibt …</div>
+  <div class="seya-compose">
+    <input class="seya-input" id="seya-input" placeholder="Nachricht an SEYA …" />
+    <button class="seya-send" id="seya-send">➤</button>
+  </div>
+`;
+document.body.appendChild(panel);
 
-    <section id="chat" class="chat"></section>
+// ------- Logik -------
+const chatEl  = panel.querySelector('#seya-chat');
+const inpEl   = panel.querySelector('#seya-input');
+const sendBtn = panel.querySelector('#seya-send');
+const typingEl= panel.querySelector('#seya-typing');
+const resetBtn= panel.querySelector('.seya-reset');
 
-    <form id="chat-form" class="composer">
-      <input id="chat-input" type="text" placeholder="Schreib SEYA…" autocomplete="off" />
-      <button id="send-btn" type="submit" aria-label="Senden">➤</button>
-    </form>
-  </main>
+const greeting = "Hi, ich bin **SEYA** – deine Assistentin von Masterclass Hair & Beauty. In welchem Standort darf ich dir helfen – Ostermiething oder Mattighofen?";
 
-  <script src="./app.js" defer></script>
-</body>
-</html>
+let history = _load() || [{role:'assistant', content:greeting}];
+_save(history);
+
+function render(){
+  chatEl.innerHTML = '';
+  history.forEach(m=>{
+    const row = document.createElement('div');
+    row.className = `seya-msg ${m.role==='user'?'user':'bot'}`;
+    const b = document.createElement('div');
+    b.className='seya-bubble';
+    b.innerHTML = String(m.content||'').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+    row.appendChild(b);
+    chatEl.appendChild(row);
+  });
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+render();
+
+async function send(text){
+  history.push({role:'user', content:text});
+  render(); _save(history);
+  inpEl.value=''; sendBtn.disabled = true; typingEl.style.display='block';
+
+  try{
+    const res = await fetch('/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ messages: history })
+    });
+    const data = await res.json();
+    typingEl.style.display='none';
+    if(res.ok && data?.reply){
+      history.push({role:'assistant', content:data.reply});
+    }else{
+      history.push({role:'assistant', content:'Entschuldige, da ging etwas schief – bitte versuch es gleich nochmal.'});
+    }
+  }catch{
+    typingEl.style.display='none';
+    history.push({role:'assistant', content:'Netzwerkfehler – bitte prüfe kurz deine Verbindung.'});
+  }
+  _save(history); render(); sendBtn.disabled=false;
+}
+
+launcher.addEventListener('click', ()=>{
+  panel.style.display = panel.style.display==='none' ? 'flex' : 'none';
+  if(panel.style.display==='flex'){ setTimeout(()=>inpEl.focus(), 100); }
+});
+resetBtn.addEventListener('click', ()=>{ _reset(); history=[{role:'assistant',content:greeting}]; _save(history); render(); });
+sendBtn.addEventListener('click', ()=>{
+  const t = (inpEl.value||'').trim(); if(!t) return; send(t);
+});
+inpEl.addEventListener('keydown', (e)=>{
+  if(e.key==='Enter'){ e.preventDefault(); const t=(inpEl.value||'').trim(); if(!t) return; send(t); }
+});
+
