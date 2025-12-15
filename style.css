@@ -1,84 +1,32 @@
-:root{
-  --bg1:#0a0f2a;
-  --bg2:#141f45;
-  --glass:#ffffff12;
-  --glass-strong:#ffffff18;
-  --accent:#6f42c1;
-  --accent-2:#8b5cf6;
-  --text:#eaf0ff;
-  --text-dim:#bec8ff;
-  --error:#ff6b6b;
-}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SEYA • Masterclass Hair & Beauty</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="container">
+    <header class="header">
+      <div class="brand">
+        <div class="logo">💇‍♀️</div>
+        <div>
+          <h1>Assistentin <span class="seya">SEYA</span></h1>
+          <p class="sub">Fragen zu Preisen, Leistungen & Terminen – SEYA hilft dir sofort.</p>
+        </div>
+      </div>
+      <button id="reset-btn" title="Neuen Chat starten">Neu starten</button>
+    </header>
 
-*{box-sizing:border-box}
-html,body{height:100%}
-body{
-  margin:0;
-  font-family:system-ui,-apple-system,"Inter",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-  background:linear-gradient(135deg,var(--bg1),var(--bg2));
-  color:var(--text);
-  display:flex; align-items:center; justify-content:center;
-}
+    <section id="chat" class="chat"></section>
 
-.container{
-  width:min(880px,96vw);
-  height:min(92vh,860px);
-  background:var(--glass);
-  backdrop-filter: blur(12px);
-  border:1px solid #ffffff1f;
-  border-radius:18px;
-  padding:18px;
-  display:flex; flex-direction:column;
-  box-shadow:0 10px 40px #0006 inset,0 10px 26px #0008;
-}
+    <form id="chat-form" class="composer">
+      <input id="chat-input" type="text" placeholder="Schreib SEYA…" autocomplete="off" />
+      <button id="send-btn" type="submit" aria-label="Senden">➤</button>
+    </form>
+  </main>
 
-.header{
-  display:flex; align-items:center; justify-content:space-between;
-  padding:4px 8px 10px; border-bottom:1px solid #ffffff1f;
-}
-
-.brand{display:flex; gap:12px; align-items:center}
-.logo{font-size:28px; filter: drop-shadow(0 2px 4px #0008)}
-h1{margin:0 0 2px; font-weight:700}
-.seya{color:var(--accent-2)}
-.sub{margin:0; color:var(--text-dim); font-size:14px}
-
-#reset-btn{
-  background:var(--error); color:#fff; border:none; padding:10px 14px;
-  border-radius:12px; cursor:pointer; font-weight:600;
-}
-
-.chat{
-  flex:1; overflow:auto; padding:14px 6px 6px 6px; margin-top:8px;
-  display:flex; flex-direction:column; gap:12px;
-}
-
-.msg{display:flex; gap:8px}
-.msg.user{justify-content:flex-end}
-.msg.bot{justify-content:flex-start}
-
-.bubble{
-  max-width:min(75ch,82%);
-  padding:12px 14px; border-radius:16px; line-height:1.45; white-space:pre-wrap;
-  border:1px solid #ffffff1a;
-}
-.user .bubble{
-  background:linear-gradient(135deg,var(--accent),var(--accent-2));
-  color:#fff; border-bottom-right-radius:6px;
-}
-.bot .bubble{
-  background:var(--glass-strong);
-  color:var(--text); border-bottom-left-radius:6px;
-}
-
-.composer{display:flex; gap:10px; padding-top:8px}
-#chat-input{
-  flex:1; padding:12px 14px; border-radius:14px; border:none; outline:none;
-  background:#ffffff14; color:var(--text); font-size:15px;
-}
-#send-btn{
-  width:56px; border-radius:14px; border:none; background:var(--accent-2);
-  color:#fff; font-size:20px; cursor:pointer;
-  transition:transform .06s ease; box-shadow:0 4px 10px #0008 inset;
-}
-#send-btn:active{transform:scale(.98)}
+  <script src="./app.js" defer></script>
+</body>
+</html>
