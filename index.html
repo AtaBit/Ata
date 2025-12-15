@@ -1,28 +1,33 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Assistentin SEYA</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Assistentin SEYA – Masterclass Hair & Beauty</title>
+  <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
+  <main class="container">
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">💇‍♀️</span>
+        <h1>Assistentin <strong>SEYA</strong></h1>
+      </div>
+      <div class="actions">
+        <button id="book-btn" class="ghost">Termin online buchen</button>
+        <button id="reset-btn" class="ghost">Neu starten</button>
+      </div>
+    </header>
 
-  <div id="chat-container">
-    <div id="chat"></div>
+    <section id="chat" class="chat" aria-live="polite"></section>
 
-    <!-- Aktionen (Buchungs-Buttons) -->
-    <div id="actions" class="actions hidden">
-      <button id="bookBtn" class="primary">Termin online buchen</button>
-    </div>
-
-    <form id="form">
-      <input id="input" autocomplete="off" placeholder="Nachricht schreiben…" />
-      <button id="send">Senden</button>
+    <form id="chat-form" class="composer" autocomplete="off">
+      <input id="chat-input" type="text" inputmode="text"
+             placeholder="Schreib SEYA…" aria-label="Nachricht an SEYA" />
+      <button id="send-btn" type="submit">Senden</button>
     </form>
-  </div>
+  </main>
 
-  <script src="app.js"></script>
+  <script src="./app.js" defer></script>
 </body>
 </html>
-
